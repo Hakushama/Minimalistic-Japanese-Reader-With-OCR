@@ -87,6 +87,7 @@ def main():
     root.attributes("-topmost", True)
     root.attributes("-fullscreen", True)
     root.geometry("640x640")
+    root.iconbitmap(oppai.PATH+"\\ICON.ico")
 
 
     def tog_fullscreen(event):
