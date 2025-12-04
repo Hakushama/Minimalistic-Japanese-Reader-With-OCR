@@ -52,14 +52,18 @@ def invert_color_of_text_image(image):
 def set_directory():
     directory = oshiri.get_directory()
     global images_in_folder
+    global images_in_folder_inverted
     global current_image_directory
-    temp = []
     file_paths = oshiri.get_image_files(directory)
+    images_in_folder = []
     for i in file_paths:
-        temp.append(Image.open(i))
-    images_in_folder = temp
-    for i in temp:
+        images_in_folder.append(Image.open(i))
+
+    images_in_folder_inverted = []
+    for i in images_in_folder:
         images_in_folder_inverted.append(invert_color_of_text_image(i))
+
+    #print("Inverted Images: " + str(images_in_folder_inverted))
     current_image_directory = directory
     event_queue.append("load_image")
     event_queue.append("reset_index")
@@ -83,16 +87,20 @@ def load_session():
         text_orientation = session_data["text_orientation"]
 
         if current_image_directory and current_image_directory != "" and os.path.isdir(current_image_directory):
-            temp = []
             file_paths = oshiri.get_image_files(current_image_directory)
-            for i in file_paths:
-                temp.append(Image.open(i))
+
             global images_in_folder
-            images_in_folder = temp
+            images_in_folder = []
 
-            for i in temp:
+            for i in file_paths:
+                images_in_folder.append(Image.open(i))
+
+            global images_in_folder_inverted
+            images_in_folder_inverted = []
+
+            for i in images_in_folder:
                 images_in_folder_inverted.append(invert_color_of_text_image(i))
-
+            #print("Inverted Images: " + str(images_in_folder_inverted))
             event_queue.append("load_image")
 
 def save_session():

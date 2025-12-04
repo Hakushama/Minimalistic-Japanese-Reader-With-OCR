@@ -170,6 +170,8 @@ def main():
             event_queue.append("load_image")
             return
 
+
+
         photo = ImageTk.PhotoImage(img)
         img_label.configure(image=photo)
         img_label.image = photo
@@ -199,7 +201,6 @@ def main():
             event_queue.append("load_image")
             return
 
-        print(str(oppai.image_index))
         if oppai.image_scale != 1.0:
             img = oshiri.rescale_image(img, oppai.image_scale)
 
@@ -350,6 +351,7 @@ def main():
     def toggle_invert_mode():
         oppai.invert_mode = not oppai.invert_mode
         event_queue.append("load_image")
+
 
     def toggle_reset_y_mode():
         oppai.reset_y = not oppai.reset_y

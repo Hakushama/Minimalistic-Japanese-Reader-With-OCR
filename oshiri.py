@@ -2,12 +2,12 @@ import tkinter as tk
 import pyautogui
 import time
 import os
-import cv2
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter
 from tkinter import filedialog
 import json
 from manga_ocr import MangaOcr
+import pyanime4k
 
 import oppai
 
@@ -72,7 +72,7 @@ def snip_and_save():
             cropped = screenshot.crop((left, top, right, bottom))
             save_path = os.path.join(os.getcwd(), oppai.PATH+"\\temp\\snip.jpg")
             cropped.save(save_path)
-            print(f"Snip saved to {save_path}")
+            #print(f"Snip saved to {save_path}")
             was_last_print_successful = True
             print_mode = False
             if oppai.ocr_mode == "OcrNew":
@@ -89,7 +89,7 @@ def snip_and_save():
     def cancel_snip(event=None):
         global was_last_print_successful
         global print_mode
-        print("Snip canceled.")
+        #print("Snip canceled.")
         snip_done[0] = False
         print_mode = False
         was_last_print_successful = False
@@ -110,51 +110,44 @@ def snip_and_save():
     toplevel.deiconify()
 
 
-def get_white_pixel_percentage(img):
-    try:
-        # Check if image is RGB
-        if img.mode == 'RGB':
-            return None
+def get_white_pixel_percentage(img, white_threshold_min=248, white_threshold_max=255):
+    """
+    Calculates the percentage of pixels considered 'white' in a grayscale image.
 
+    Args:
+        img: PIL Image object (any mode)
+        white_threshold_min: Minimum intensity to consider as white (default: 248)
+        white_threshold_max: Maximum intensity (usually 255)
+
+    Returns:
+        float: Percentage of white pixels (0.0 to 100.0)
+    """
+    try:
         # Convert to grayscale if not already
         if img.mode != 'L':
             img = img.convert('L')
 
-        # Convert image to numpy array
+        # Convert to numpy array
         img_array = np.array(img)
 
-        # Count white pixels (255 in grayscale)
-        white_pixels = np.sum(img_array == 255)
+        # Count pixels in the white range [248, 255]
+        white_pixels = np.sum((img_array >= white_threshold_min) & (img_array <= white_threshold_max))
 
-        # Calculate total pixels
+        # Total number of pixels
         total_pixels = img_array.size
+
+        if total_pixels == 0:
+            return 0.0
 
         # Calculate percentage
         percentage = (white_pixels / total_pixels) * 100
 
-        return percentage
+        return round(percentage, 4)
 
     except Exception as e:
         print(f"Error processing image: {e}")
         return None
 
-def percentage_of_black_pixels(image_path, threshold=20):
-    # Load the image in grayscale
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-
-    if img is None:
-        raise FileNotFoundError(f"Image not found: {image_path}")
-
-    # Total number of pixels
-    total_pixels = img.size
-
-    # Count pixels with intensity less than or equal to the threshold
-    black_pixels = np.sum(img <= threshold)
-
-    # Calculate percentage
-    black_percentage = (black_pixels / total_pixels) * 100
-
-    return black_percentage
 
 def invert_image_colors(image):
     # Invert the colors
@@ -169,7 +162,7 @@ def get_image_files(directory):
         files[i] = directory+"/"+files[i]
 
     oppai.images_in_folder_paths = files
-    print(str(files))
+    #print(str(files))
     return files
 
 
@@ -179,6 +172,18 @@ def get_directory():
         return directory
 
 def rescale_image(image : Image, multiplier : float = 1.0):
+    processor = pyanime4k.Processor(
+        processor_type="cpu",
+        device=0,
+        model="acnet-hdn0"
+    )
+
+    src = np.asarray(image)
+    dst = processor(src, factor=multiplier)
+    return Image.fromarray(dst)
+
+
+def rescale_image_old(image : Image, multiplier : float = 1.0):
     width = image.size[0]*multiplier
     height = image.size[1]*multiplier
     return image.resize((round(width), round(height)), Image.Resampling.LANCZOS)
