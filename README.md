@@ -10,7 +10,7 @@ Very effective tool for learning Japanese.
 
 Session saving and loading. Save your current session to a save slot with a single click and load it with a single click to get everything exactly how you left it, supports multiple sessions.
 
-Python 12.8
+Python 3.11
 
 
 Hotkeys:
