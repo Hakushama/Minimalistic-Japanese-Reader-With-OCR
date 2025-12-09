@@ -88,6 +88,7 @@ def main():
     root.attributes("-fullscreen", True)
     root.geometry("640x640")
     root.iconbitmap(oppai.PATH+"\\ICON.ico")
+    root.title("おっぱい")
 
 
     def tog_fullscreen(event):
@@ -144,6 +145,7 @@ def main():
 
     def on_arrow_next(event):
         global hotkey_cooldown
+        
         if hotkey_cooldown > time.time()*1000:
             return
         hotkey_cooldown = time.time()*1000+50
@@ -164,7 +166,10 @@ def main():
             return
 
         if oppai.image_scale != 1.0:
-            img = oshiri.rescale_image(img, oppai.image_scale)
+            if oppai.high_quality_scaling:
+                img = oshiri.rescale_image(img, oppai.image_scale)
+            else:
+                img = oshiri.rescale_image_old(img, oppai.image_scale)
 
         if not img:
             event_queue.append("load_image")
@@ -182,6 +187,7 @@ def main():
 
     def on_arrow_previous(event):
         global hotkey_cooldown
+        
         if hotkey_cooldown > time.time() * 1000:
             return
         hotkey_cooldown = time.time() * 1000 + 50
@@ -202,7 +208,10 @@ def main():
             return
 
         if oppai.image_scale != 1.0:
-            img = oshiri.rescale_image(img, oppai.image_scale)
+            if oppai.high_quality_scaling:
+                img = oshiri.rescale_image(img, oppai.image_scale)
+            else:
+                img = oshiri.rescale_image_old(img, oppai.image_scale)
 
         if not img:
             event_queue.append("load_image")
@@ -234,6 +243,7 @@ def main():
 
     def on_zoom_in(event):
         global hotkey_cooldown
+        
         if hotkey_cooldown > time.time() * 1000:
             return
         hotkey_cooldown = time.time() * 1000 + 50
@@ -249,7 +259,10 @@ def main():
         if img_label.cget("image"):
             oppai.image_scale += .1
             if oppai.image_scale != 1.0:
-                img = oshiri.rescale_image(img, oppai.image_scale)
+                if oppai.high_quality_scaling:
+                    img = oshiri.rescale_image(img, oppai.image_scale)
+                else:
+                    img = oshiri.rescale_image_old(img, oppai.image_scale)
 
             if not img:
                 event_queue.append("load_image")
@@ -270,6 +283,7 @@ def main():
 
     def on_zoom_out(event):
         global hotkey_cooldown
+        
         if hotkey_cooldown > time.time() * 1000:
             return
         hotkey_cooldown = time.time() * 1000 + 50
@@ -285,7 +299,10 @@ def main():
         if img_label.cget("image"):
             oppai.image_scale -= .1
             if oppai.image_scale != 1.0:
-                img = oshiri.rescale_image(img, oppai.image_scale)
+                if oppai.high_quality_scaling:
+                    img = oshiri.rescale_image(img, oppai.image_scale)
+                else:
+                    img = oshiri.rescale_image_old(img, oppai.image_scale)
 
             if not img:
                 event_queue.append("load_image")
@@ -356,9 +373,14 @@ def main():
     def toggle_reset_y_mode():
         oppai.reset_y = not oppai.reset_y
 
-    invert_and_reset_y = tk.Frame(title_bar, bg="#1E1F22", relief="raised", bd=0, height=48, width=226)
+    def toggle_highres_scaling():
+        oppai.high_quality_scaling = not oppai.high_quality_scaling
+        event_queue.append("load_image")
+
+    invert_and_reset_y = tk.Frame(title_bar, bg="#1E1F22", relief="raised", bd=0, height=48, width=300)
     invert_and_reset_y.pack_propagate(False)
     invert_and_reset_y.pack(anchor="center", pady=4)
+
 
     btn_tog_invert_mode = tk.Button(invert_and_reset_y, text="Invert Mode", command=lambda: toggle_invert_mode(), bg="#2b2b2b",
                             fg="#cccccc", bd=0, activebackground="#444444", activeforeground="#ffffff", borderwidth=3,
@@ -370,8 +392,16 @@ def main():
                                     fg="#cccccc", bd=0, activebackground="#444444", activeforeground="#ffffff",
                                     borderwidth=3,
                                     relief="raised", font=("Helvetica", 14, "bold"), padx=2)
-    btn_reset_y_on_page_change.pack(side="right")
+    btn_reset_y_on_page_change.place(x=134,y=3)
     ToolTip(btn_reset_y_on_page_change, "The Y position will reset on page change.")
+
+    btn_high_quality_scaling = tk.Button(invert_and_reset_y, text="HQS", command=lambda: toggle_highres_scaling(),
+                                           bg="#2b2b2b",
+                                           fg="#cccccc", bd=0, activebackground="#444444", activeforeground="#ffffff",
+                                           borderwidth=3,
+                                           relief="raised", font=("Helvetica", 14, "bold"), padx=2)
+    btn_high_quality_scaling.place(x=228, y=3)
+    ToolTip(btn_high_quality_scaling, "Enables high quality AI scaling.\nCan cause lag when scaling an image.\nGood for low resolution images.")
 
     session_shit_frame = tk.Frame(title_bar, bg="#1E1F22", relief="raised", bd=0, height=164)
     session_shit_frame.pack_propagate(False)
@@ -443,6 +473,11 @@ def main():
         elif not oppai.reset_y and btn_reset_y_on_page_change.cget("relief") != "raised":
             btn_reset_y_on_page_change.configure(relief="raised")
 
+        if oppai.high_quality_scaling and btn_high_quality_scaling.cget("relief") != "sunken":
+            btn_high_quality_scaling.configure(relief="sunken")
+        elif not oppai.high_quality_scaling and btn_high_quality_scaling.cget("relief") != "raised":
+            btn_high_quality_scaling.configure(relief="raised")
+
         number_to_display = len(oppai.images_in_folder)-1
         if number_to_display == -1:
             number_to_display = 0
@@ -463,12 +498,16 @@ def main():
                 oppai.load_session()
 
             if event == "load_image":
+                
                 img = oppai.images_in_folder[oppai.image_index]
                 if oppai.invert_mode:
                     img = oppai.images_in_folder_inverted[oppai.image_index]
 
                 if oppai.image_scale != 1.0:
-                    img = oshiri.rescale_image(img, oppai.image_scale)
+                    if oppai.high_quality_scaling:
+                        img = oshiri.rescale_image(img, oppai.image_scale)
+                    else:
+                        img = oshiri.rescale_image_old(img, oppai.image_scale)
 
                 if not img:
                     event_queue.append("load_image")
@@ -510,7 +549,10 @@ def main():
                     img = oppai.images_in_folder_inverted[oppai.image_index]
 
                 if oppai.image_scale != 1.0:
-                    img = oshiri.rescale_image(img, oppai.image_scale)
+                    if oppai.high_quality_scaling:
+                        img = oshiri.rescale_image(img, oppai.image_scale)
+                    else:
+                        img = oshiri.rescale_image_old(img, oppai.image_scale)
                 photo = ImageTk.PhotoImage(img)
                 img_label.configure(image=photo)
                 img_label.image = photo

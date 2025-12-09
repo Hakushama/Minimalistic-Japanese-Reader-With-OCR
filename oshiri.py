@@ -170,6 +170,8 @@ def get_directory():
     directory = filedialog.askdirectory(title="Select Directory")
     if directory:
         return directory
+    else:
+        return None
 
 def rescale_image(image : Image, multiplier : float = 1.0):
     processor = pyanime4k.Processor(

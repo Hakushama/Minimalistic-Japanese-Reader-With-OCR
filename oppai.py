@@ -17,6 +17,7 @@ image_index = 0
 current_image_directory = ""
 current_session_id = 1
 ocr_mode = "OcrNew"
+high_quality_scaling : bool = False
 
 def ocr_new():
     global ocr_mode
@@ -51,6 +52,8 @@ def invert_color_of_text_image(image):
 
 def set_directory():
     directory = oshiri.get_directory()
+    if not directory:
+        return
     global images_in_folder
     global images_in_folder_inverted
     global current_image_directory
